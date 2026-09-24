@@ -1,122 +1,124 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
+import { useMemo, useState } from 'react'
+import { Routes, Route } from 'react-router-dom'
 import './App.css'
+import Navbar from './components/Navbar'
+import Home from './pages/Home'
+import Menu from './pages/Menu'
+import DishDetail from './pages/DishDetail'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [cart, setCart] = useState([])
+  const [showCart, setShowCart] = useState(false)
+  const [showCheckout, setShowCheckout] = useState(false)
+
+  const cartTotal = useMemo(
+    () => cart.reduce((total, item) => total + Number(item.priceETB || 0), 0),
+    [cart]
+  )
+
+  function addToCart(item) {
+    setCart((current) => [...current, item])
+  }
+
+  function removeFromCart(index) {
+    setCart((current) => current.filter((_, i) => i !== index))
+  }
 
   return (
     <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+      <Navbar cartCount={cart.length} onCartClick={() => setShowCart(true)} />
 
-      <div className="ticks"></div>
+      <Routes>
+        <Route path="/" element={<Home addToCart={addToCart} />} />
+        <Route path="/menu" element={<Menu addToCart={addToCart} />} />
+        <Route path="/dish/:id" element={<DishDetail addToCart={addToCart} />} />
+      </Routes>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      {showCart && (
+        <div className="overlay" onClick={() => setShowCart(false)}>
+          <aside className="cart-panel" onClick={(e) => e.stopPropagation()}>
+            <div className="cart-header">
+              <h2>Your order</h2>
+              <button onClick={() => setShowCart(false)}>×</button>
+            </div>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
+            {cart.length === 0 ? (
+              <p>Your cart is empty.</p>
+            ) : (
+              <>
+                <div className="cart-items">
+                  {cart.map((item, index) => (
+                    <div className="cart-item" key={`${item.id}-${index}`}>
+                      <div>
+                        <strong>{item.nameEn}</strong>
+                        <p>{item.priceETB} ETB</p>
+                      </div>
+
+                      <button onClick={() => removeFromCart(index)}>Remove</button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="cart-total">
+                  <strong>Total</strong>
+                  <strong>{cartTotal} ETB</strong>
+                </div>
+
+                <button
+                  className="primary-button checkout-button"
+                  onClick={() => {
+                    setShowCart(false)
+                    setShowCheckout(true)
+                  }}
+                >
+                  Proceed to checkout
+                </button>
+              </>
+            )}
+          </aside>
+        </div>
+      )}
+
+      {showCheckout && (
+        <div className="overlay" onClick={() => setShowCheckout(false)}>
+          <div className="checkout-panel" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="close-button"
+              onClick={() => setShowCheckout(false)}
+            >
+              ×
+            </button>
+
+            <p className="eyebrow">CHECKOUT</p>
+            <h2>Complete your order</h2>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                alert('Thank you! Your order has been received.')
+                setCart([])
+                setShowCheckout(false)
+              }}
+            >
+              <input required placeholder="Full name" />
+              <input required type="tel" placeholder="Phone number" />
+              <input required placeholder="Delivery address" />
+
+              <div className="checkout-total">
+                Total: <strong>{cartTotal} ETB</strong>
+              </div>
+
+              <button className="primary-button" type="submit">
+                Place order
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   )
 }
 
 export default App
+
+
